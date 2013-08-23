@@ -1,38 +1,43 @@
-/*####################
-From node.js API docs (http://nodejs.org/api/fs.html#fs_fs_readfilesync_filename_options)
-fs.readFileSync(filename, [options])
-	Synchronous version of fs.readFile.  Returns the contents
-	of the parameter filename.
-
-	If the encoding option is specified then this function
-	returns a string.  Otherwise, it returns a buffer.
-####################*/
-
-var express = require('express');
+var http = require('http');
 var fs = require('fs');
-
-var app = express.createServer(express.logger());
-
-
-/*####################
-From node.js API docs (http://nodejs.org/api/fs.html#fs_fs_readfilesync_filename_options)
-fs.readFileSync(filename, [options])
-	Synchronous version of fs.readFile.  Returns the contents
-	of the parameter filename.
-
-	If the encoding option is specified then this function
-	returns a string.  Otherwise, it returns a buffer.
-####################*/
-
-app.get('/', function(request, response) {
-	//get the contents of index.html
-	var contents = fs.readFileSync("index.html");
-
-	//response.send(string from previous step)
-  response.send(contents.toString());
-});
-
-var port = process.env.PORT || 8080;
-app.listen(port, function() {
-  console.log("Listening on " + port);
-});
+var path = require('path');
+http.createServer(function (request, response) {
+    console.log('request starting...');
+	
+	var filePath = '.' + request.url;
+	if (filePath == './')
+		filePath = './index.html';
+		
+	var extname = path.extname(filePath);
+	var contentType = 'text/html';
+	switch (extname) {
+		case '.js':
+			contentType = 'text/javascript';
+			break;
+		case '.css':
+			contentType = 'text/css';
+			break;
+	}
+	
+	path.exists(filePath, function(exists) {
+	
+		if (exists) {
+			fs.readFile(filePath, function(error, content) {
+				if (error) {
+					response.writeHead(500);
+					response.end();
+				}
+				else {
+					response.writeHead(200, { 'Content-Type': contentType });
+					response.end(content, 'utf-8');
+				}
+			});
+		}
+		else {
+			response.writeHead(404);
+			response.end();
+		}
+	});
+	
+}).listen(8125);
+console.log('Server running at http://127.0.0.1:8125/');
